@@ -25,8 +25,8 @@ async def run_injustice():
 
 async def run():
     dotenv.load_dotenv("config.env")
-    UID = os.environ.get("mjs_uid")
-    TOKEN = os.environ.get("mjs_token")
+    UID = os.environ.get("ms_uid")
+    TOKEN = os.environ.get("ms_token")
 
     async with Gateway("wss://mjusgs.mahjongsoul.com:9663", mjs_uid=UID, mjs_token=TOKEN) as g:
         global gateway
