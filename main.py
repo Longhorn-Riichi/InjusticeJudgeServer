@@ -19,7 +19,7 @@ async def run_injustice():
     except e:
         results = [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2}, parsed_metadata.name)]
     ret = ""
-    for line in asyncio.run(analyze_game(link, look_for={"injustice"})):
+    for line in results:
         ret += f"<li>{line[2:]}</li>"
     return f"<ul>{ret}</ul>"
 
