@@ -15,13 +15,9 @@ async def run_injustice():
     link = data['link']
     kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(*(await gateway.fetch_majsoul(link)))
     try:
-        results = [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2,3}, parsed_metadata.name)]
+        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2,3}, parsed_metadata.name)]
     except e:
-        results = [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2}, parsed_metadata.name)]
-    ret = ""
-    for line in results:
-        ret += f"<li>{line[2:]}</li>"
-    return f"<ul>{ret}</ul>"
+        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2}, parsed_metadata.name)]
 
 async def run():
     dotenv.load_dotenv("config.env")
