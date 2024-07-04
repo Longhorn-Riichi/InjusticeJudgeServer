@@ -11,6 +11,9 @@ from google.protobuf.json_format import MessageToDict
 from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, parse_wrapped_bytes, parse_majsoul_link
 from websockets.exceptions import ConnectionClosedError
 
+MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
+MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
+
 class GeneralMajsoulError(Exception):
     def __init__(self, errorCode: int, message: str):
         self.errorCode = errorCode
@@ -19,8 +22,7 @@ class GeneralMajsoulError(Exception):
 
 class Gateway(MahjongSoulAPI):
     """Helper class to interface with the Mahjong Soul API"""
-    def __init__(self, endpoint: str, mjs_username: Optional[str]=None, mjs_password: Optional[str]=None, mjs_uid: Optional[str]=None, mjs_token: Optional[str]=None) -> None:
-        super().__init__(endpoint)
+    def __init__(self, mjs_username: Optional[str]=None, mjs_password: Optional[str]=None, mjs_uid: Optional[str]=None, mjs_token: Optional[str]=None) -> None:
         self.logger = logging.getLogger("Gateway")
         self.mjs_username = mjs_username
         self.mjs_password = mjs_password
@@ -28,7 +30,11 @@ class Gateway(MahjongSoulAPI):
         self.mjs_token = mjs_token
         self.use_cn = self.mjs_username is not None and self.mjs_password is not None
         self.use_en = self.mjs_uid is not None and self.mjs_token is not None
-        if not self.use_cn and not self.use_en:
+        if self.use_cn:
+            super().__init__(MS_CHINESE_WSS_ENDPOINT)
+        elif self.use_en:
+            super().__init__(MS_ENGLISH_WSS_ENDPOINT)
+        else:
             raise Exception("Gateway was initialized without login credentials!")
 
     async def login_en(self):
@@ -143,6 +149,7 @@ class Gateway(MahjongSoulAPI):
         try:
             return await super().call(methodName, **msgFields)
         except GeneralMajsoulError as mjsError:
+            # if you get 1002, you're likely using the wrong endpoint
             if mjsError.errorCode == 1004:
                 """
                 "ERR_ACC_NOT_LOGIN"

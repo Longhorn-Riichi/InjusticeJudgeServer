@@ -9,6 +9,9 @@ from InjusticeJudge.injustice_judge.injustices import evaluate_game
 app = Quart(__name__)
 gateway = None
 
+MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
+MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
+
 @app.route('/injustice', methods=['POST'])
 async def run_injustice():
     data = await request.get_json()
@@ -27,7 +30,7 @@ async def run():
     # UID = os.environ.get("ms_uid")
     # TOKEN = os.environ.get("ms_token")
 
-    async with Gateway("wss://mjusgs.mahjongsoul.com:9663", mjs_username=USERNAME, mjs_password=PASSWORD) as g:
+    async with Gateway(mjs_username=USERNAME, mjs_password=PASSWORD) as g:
         global gateway
         gateway = g
         await gateway.login()
