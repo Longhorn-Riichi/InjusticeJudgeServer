@@ -14,17 +14,20 @@ async def run_injustice():
     data = await request.get_json()
     link = data['link']
     kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(*(await gateway.fetch_majsoul(link)))
-    try:
-        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2,3}, parsed_metadata.name)]
-    except e:
-        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2}, parsed_metadata.name)]
+    return [result for kyoku in kyokus for result in evaluate_game(kyoku, set(), parsed_metadata.name)]
 
 async def run():
     dotenv.load_dotenv("config.env")
-    UID = os.environ.get("ms_uid")
-    TOKEN = os.environ.get("ms_token")
 
-    async with Gateway("wss://mjusgs.mahjongsoul.com:9663", mjs_uid=UID, mjs_token=TOKEN) as g:
+    # mjs_username=USERNAME, mjs_password=PASSWORD
+    USERNAME = os.environ.get("ms_username")
+    PASSWORD = os.environ.get("ms_password")
+
+    # mjs_uid=UID, mjs_token=TOKEN
+    # UID = os.environ.get("ms_uid")
+    # TOKEN = os.environ.get("ms_token")
+
+    async with Gateway("wss://mjusgs.mahjongsoul.com:9663", mjs_username=USERNAME, mjs_password=PASSWORD) as g:
         global gateway
         gateway = g
         await gateway.login()
