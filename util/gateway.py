@@ -139,6 +139,7 @@ class Gateway(MahjongSoulAPI):
         """
         if hasattr(self, "huge_ping_task") and self.huge_ping_task:
             self.huge_ping_task.cancel()
+        await self.reconnect()
         await self.login()
 
     async def call(self, methodName, **msgFields):
