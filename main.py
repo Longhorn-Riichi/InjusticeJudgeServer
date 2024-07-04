@@ -9,15 +9,13 @@ from InjusticeJudge.injustice_judge.injustices import evaluate_game
 app = Quart(__name__)
 gateway = None
 
-MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
-MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
-
 @app.route('/injustice', methods=['POST'])
 async def run_injustice():
     data = await request.get_json()
     link = data['link']
     kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(*(await gateway.fetch_majsoul(link)))
-    return [result for kyoku in kyokus for result in evaluate_game(kyoku, set(), parsed_metadata.name)]
+    parsed_player_seat = parsed_player_seat or 0
+    return [result for kyoku in kyokus for result in evaluate_game(kyoku, {parsed_player_seat}, parsed_metadata.name)]
 
 async def run():
     dotenv.load_dotenv("config.env")
