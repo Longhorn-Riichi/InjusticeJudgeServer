@@ -32,7 +32,6 @@ async def run_injustice():
         kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(tenhou_log, metadata, username)
     else:
         raise Exception("Invalid input")
-    print(player, parsed_player_seat)
     player = parsed_player_seat or player
     if player is None:
         try:
