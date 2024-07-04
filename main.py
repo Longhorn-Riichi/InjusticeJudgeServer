@@ -13,7 +13,7 @@ app = Quart(__name__)
 gateway = None
 majsoul_regex = r"https://mahjongsoul.game.yo-star.com/\?paipu=(\d{6}-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(_a\d+)?"
 tenhou_regex = r"https://tenhou.net/0/\?log=(\d{10}gm-\d{4}-\d{4}-[0-9a-f]{8})(&tw=\d+)?"
-riichicity_regex = r"^[a-z0-9]{18},(.+)/$"
+riichicity_regex = r"^[a-z0-9]{20},(.+)/$"
 
 @app.route('/injustice', methods=['POST'])
 async def run_injustice():
@@ -22,17 +22,20 @@ async def run_injustice():
     print(link)
     if re.match(majsoul_regex, link) is not None:
         kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(*(await gateway.fetch_majsoul(link)))
-        parsed_player_seat = parsed_player_seat or 0
     elif re.match(tenhou_regex, link) is not None:
         kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(*fetch_tenhou(link))
-        parsed_player_seat = parsed_player_seat or 0
     elif re.match(riichicity_regex, link) is not None:
         identifier, username = link.split(",", 2)
         kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(*fetch_riichicity(identifier), username)
-        parsed_player_seat = parsed_player_seat or 0
     else:
         raise Exception("Invalid input")
-    return [result for kyoku in kyokus for result in evaluate_game(kyoku, {parsed_player_seat}, parsed_metadata.name)]
+    if parsed_player_seat is None:
+        try:
+            return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2,3}, parsed_metadata.name)]
+        except:
+            return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2}, parsed_metadata.name)]
+    else:
+        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {parsed_player_seat}, parsed_metadata.name)]
 
 async def run():
     dotenv.load_dotenv("config.env")
