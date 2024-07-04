@@ -21,21 +21,26 @@ async def run_injustice():
     link = data['link']
     print(link)
     if re.match(majsoul_regex, link) is not None:
-        kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(*(await gateway.fetch_majsoul(link)))
+        majsoul_log, metadata, player = await gateway.fetch_majsoul(link)
+        kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(majsoul_log, metadata, None)
     elif re.match(tenhou_regex, link) is not None:
-        kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(*fetch_tenhou(link))
+        tenhou_log, metadata, player = fetch_tenhou(link)
+        kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(tenhou_log, metadata, None)
     elif re.match(riichicity_regex, link) is not None:
         identifier, username = link.split("@", 2)
-        kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(*fetch_riichicity(identifier), username)
+        tenhou_log, metadata = fetch_riichicity(identifier)
+        kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(tenhou_log, metadata, username)
     else:
         raise Exception("Invalid input")
-    if parsed_player_seat is None:
+    print(player, parsed_player_seat)
+    player = parsed_player_seat or player
+    if player is None:
         try:
             return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2,3}, parsed_metadata.name)]
         except:
             return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2}, parsed_metadata.name)]
     else:
-        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {parsed_player_seat}, parsed_metadata.name)]
+        return [result for kyoku in kyokus for result in evaluate_game(kyoku, {player}, parsed_metadata.name)]
 
 async def run():
     dotenv.load_dotenv("config.env")

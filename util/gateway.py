@@ -205,7 +205,7 @@ class Gateway(MahjongSoulAPI):
         else:
             actions = [parse_wrapped_bytes(record) for record in parsed.records]  # type: ignore[attr-defined]
         
-        player = 0
+        player = None
         if link.count("_") == 2:
             player = int(link[-1])
         else:
