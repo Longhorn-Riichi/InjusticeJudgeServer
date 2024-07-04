@@ -13,7 +13,7 @@ app = Quart(__name__)
 gateway = None
 majsoul_regex = r"https://mahjongsoul.game.yo-star.com/\?paipu=(\d{6}-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(_a\d+)?"
 tenhou_regex = r"https://tenhou.net/0/\?log=(\d{10}gm-\d{4}-\d{4}-[0-9a-f]{8})(&tw=\d+)?"
-riichicity_regex = r"^[a-z0-9]{20},(.+)/$"
+riichicity_regex = r"[a-z0-9]{20}(@.+)?"
 
 @app.route('/injustice', methods=['POST'])
 async def run_injustice():
@@ -25,7 +25,7 @@ async def run_injustice():
     elif re.match(tenhou_regex, link) is not None:
         kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(*fetch_tenhou(link))
     elif re.match(riichicity_regex, link) is not None:
-        identifier, username = link.split(",", 2)
+        identifier, username = link.split("@", 2)
         kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(*fetch_riichicity(identifier), username)
     else:
         raise Exception("Invalid input")
