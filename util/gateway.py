@@ -254,6 +254,8 @@ class Gateway(MahjongSoulAPI):
         if username is not None:
             for p in game_data["data"]["handRecord"][0]["players"]:
                 if p["nickname"] == username:
-                    player = p["position"]
+                    player_pos = p["position"]
+                    starting_dealer_pos = json.loads(game_data["data"]["handRecord"][0]["handEventRecord"][0]["data"])["dealer_pos"]
+                    player = (player_pos - starting_dealer_pos) % 4
                     break
         return game_data["data"]["handRecord"], game_data["data"], player
