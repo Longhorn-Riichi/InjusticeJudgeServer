@@ -24,7 +24,10 @@ async def run_injustice():
                                 [tenhou_regex, gateway.fetch_tenhou, parse_tenhou],
                                 [riichicity_regex, gateway.fetch_riichicity, parse_riichicity]]:
         if re.match(regex, link) is not None:
-            log, metadata, player = await fetch(link)
+            try:
+                log, metadata, player = await fetch(link)
+            except: # try it again
+                log, metadata, player = await fetch(link)
             kyokus, parsed_metadata, parsed_player_seat = parse(log, metadata, None)
             break
     else:
