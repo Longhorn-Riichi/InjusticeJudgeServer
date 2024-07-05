@@ -28,8 +28,9 @@ async def run_injustice():
         kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(tenhou_log, metadata, None)
     elif re.match(riichicity_regex, link) is not None:
         identifier, username = link.split("@", 2)
-        tenhou_log, metadata = await fetch_riichicity(identifier)
-        kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(tenhou_log, metadata, username)
+        riichicity_log, metadata = await fetch_riichicity(identifier)
+        player = None
+        kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(riichicity_log, metadata, username)
     else:
         raise Exception("Invalid input")
     player = parsed_player_seat or player
