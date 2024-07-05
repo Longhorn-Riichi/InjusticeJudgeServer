@@ -32,7 +32,7 @@ async def run_injustice():
             break
     else:
         raise Exception("Invalid input")
-    player = parsed_player_seat or player
+    player = parsed_player_seat if parsed_player_seat is not None else player
     if player is None:
         try:
             return [result for kyoku in kyokus for result in evaluate_game(kyoku, {0,1,2,3}, parsed_metadata.name)]

@@ -182,20 +182,7 @@ class Gateway:
         Instead of logging in for each fetch, just fetch through the already logged-in
         AccountManager.
         """
-        identifier_pattern = r'\?paipu=([0-9a-zA-Z-]+)(_a)?(\d+)?_?(\d)?'
-        identifier_match = re.search(identifier_pattern, link)
-        if identifier_match is None:
-            raise Exception(f"Invalid Mahjong Soul link: {link}")
-        identifier = identifier_match.group(1)
-
-        if not all(c in "0123456789abcdef-" for c in identifier):
-            # deanonymize the link
-            codex = "0123456789abcdefghijklmnopqrstuvwxyz"
-            decoded = ""
-            for i, c in enumerate(identifier):
-                decoded += "-" if c == "-" else codex[(codex.index(c) - i + 55) % 36]
-            identifier = decoded
-        
+        identifier, ms_account_id, player_seat = parse_majsoul_link(link)
         record = await self.call(
             "fetchGameRecord",
             game_uuid=identifier,
@@ -206,17 +193,16 @@ class Gateway:
             actions = [parse_wrapped_bytes(action.result) for action in parsed.actions if len(action.result) > 0]  # type: ignore[attr-defined]
         else:
             actions = [parse_wrapped_bytes(record) for record in parsed.records]  # type: ignore[attr-defined]
-        
-        account_string = identifier_match.group(3)
-        if account_string is not None:
-            ms_account_id = int((((int(account_string)-1358437)^86216345)-1117113)/7)
-        else:
-            ms_account_id = 0
-        player_seat = identifier_match.group(4)
+
+        player = None
         if player_seat is not None:
-            player_seat = int(player_seat)
-        
-        return actions, MessageToDict(record.head), player_seat
+            player = player_seat
+        elif ms_account_id is not None:
+            for acc in record.head.accounts:
+                if acc.account_id == ms_account_id:
+                    player = acc.seat
+                    break
+        return actions, MessageToDict(record.head), player
 
     async def fetch_tenhou(self, link: str):
         # just an async wrapper around fetch_tenhou
