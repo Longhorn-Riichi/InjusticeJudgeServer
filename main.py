@@ -6,7 +6,7 @@ from util.gateway import Gateway
 from quart import Quart, jsonify, request
 from InjusticeJudge.injustice_judge.fetch.majsoul import parse_majsoul, MahjongSoulAPI
 from InjusticeJudge.injustice_judge.fetch.tenhou import fetch_tenhou, parse_tenhou
-from InjusticeJudge.injustice_judge.fetch.riichicity import fetch_riichicity, parse_riichicity
+from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI, parse_riichicity
 from InjusticeJudge.injustice_judge.injustices import evaluate_game
 
 app = Quart(__name__)
