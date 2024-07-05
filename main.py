@@ -51,7 +51,7 @@ async def run():
     RC_PASSWORD = os.getenv("rc_password")
 
     async with RiichiCityAPI("aga.mahjong-jp.net", RC_EMAIL, RC_PASSWORD) as rc_api:
-        async with Gateway(mjs_username=MS_USERNAME, mjs_password=MS_PASSWORD, rc_api=rc_api) as g:
+        async with Gateway(rc_api=rc_api, mjs_username=MS_USERNAME, mjs_password=MS_PASSWORD) as g:
             global gateway
             gateway = g
             await gateway.login()

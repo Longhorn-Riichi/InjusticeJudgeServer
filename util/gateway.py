@@ -24,11 +24,11 @@ class GeneralMajsoulError(Exception):
 
 class Gateway(MahjongSoulAPI):
     """Helper class to interface with the Mahjong Soul API"""
-    def __init__(self, mjs_username: Optional[str]=None,
+    def __init__(self, rc_api: RiichiCityAPI,
+                       mjs_username: Optional[str]=None,
                        mjs_password: Optional[str]=None,
                        mjs_uid: Optional[str]=None,
-                       mjs_token: Optional[str]=None,
-                       rc_api: RiichiCityAPI) -> None:
+                       mjs_token: Optional[str]=None) -> None:
         self.logger = logging.getLogger("Gateway")
         self.mjs_username = mjs_username
         self.mjs_password = mjs_password
