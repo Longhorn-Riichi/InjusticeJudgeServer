@@ -195,7 +195,7 @@ class Gateway(MahjongSoulAPI):
         Instead of logging in for each fetch, just fetch through the already logged-in
         AccountManager.
         """
-        identifier_pattern = r'\?paipu=([0-9a-zA-Z-]+)'
+        identifier_pattern = r'\?paipu=([0-9a-zA-Z-]+)(_a)?(\d+)?_?(\d)?'
         identifier_match = re.search(identifier_pattern, link)
         if identifier_match is None:
             raise Exception(f"Invalid Mahjong Soul link: {link}")
@@ -220,20 +220,16 @@ class Gateway(MahjongSoulAPI):
         else:
             actions = [parse_wrapped_bytes(record) for record in parsed.records]  # type: ignore[attr-defined]
         
-        player = None
-        if link.count("_") == 2:
-            player = int(link[-1])
+        account_string = identifier_match.group(3)
+        if account_string is not None:
+            ms_account_id = int((((int(account_string)-1358437)^86216345)-1117113)/7)
         else:
-            player_pattern = r'_a(\d+)'
-            player_match = re.search(player_pattern, link)
-            if player_match is not None:
-                ms_account_id = int((((int(player_match.group(1))-1358437)^86216345)-1117113)/7)
-                for acc in record.head.accounts:
-                    if acc.account_id == ms_account_id:
-                        player = acc.seat
-                        break
+            ms_account_id = 0
+        player_seat = identifier_match.group(4)
+        if player_seat is not None:
+            player_seat = int(player_seat)
         
-        return actions, MessageToDict(record.head), player
+        return actions, MessageToDict(record.head), player_seat
 
     async def fetch_riichicity(self, identifier: str):
         """
