@@ -9,6 +9,7 @@ from typing import *
 from google.protobuf.message import Message
 from google.protobuf.json_format import MessageToDict
 from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, MahjongSoulError, parse_wrapped_bytes, parse_majsoul_link
+from InjusticeJudge.injustice_judge.fetch.tenhou import fetch_tenhou
 from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI
 from websockets.exceptions import ConnectionClosedError
 import websockets
@@ -216,6 +217,10 @@ class Gateway:
             player_seat = int(player_seat)
         
         return actions, MessageToDict(record.head), player_seat
+
+    async def fetch_tenhou(self, link: str):
+        # just an async wrapper around fetch_tenhou
+        return fetch_tenhou(link)
 
     async def fetch_riichicity(self, identifier: str):
         """

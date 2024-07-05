@@ -5,7 +5,7 @@ import re
 from util.gateway import Gateway
 from quart import Quart, jsonify, request
 from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, parse_majsoul, MahjongSoulAPI
-from InjusticeJudge.injustice_judge.fetch.tenhou import fetch_tenhou, parse_tenhou
+from InjusticeJudge.injustice_judge.fetch.tenhou import parse_tenhou
 from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI, parse_riichicity
 from InjusticeJudge.injustice_judge.injustices import evaluate_game
 
@@ -21,7 +21,7 @@ async def run_injustice():
     link = data['link']
     print(link)
     for regex, fetch, parse in [[majsoul_regex, gateway.fetch_majsoul, parse_majsoul],
-                                [tenhou_regex, fetch_tenhou, parse_tenhou],
+                                [tenhou_regex, gateway.fetch_tenhou, parse_tenhou],
                                 [riichicity_regex, gateway.fetch_riichicity, parse_riichicity]]:
         if re.match(regex, link) is not None:
             log, metadata, player = await fetch(link)
