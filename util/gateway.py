@@ -248,23 +248,9 @@ class Gateway(MahjongSoulAPI):
             if username in "0123":
                 player = int(username)
                 username = None
-        try:
-            f = open(f"cached_games/game-{identifier}.json", 'rb')
-            game_data = json.load(f)
-        except Exception:
-            import os
-            import dotenv
-            import requests
-            import urllib3
-            dotenv.load_dotenv("config.env")
-            EMAIL = os.getenv("rc_email")
-            PASSWORD = os.getenv("rc_password")
-            if EMAIL is not None and PASSWORD is not None:
-                game_data = await self.rc_api.call("/record/getRoomData", keyValue="cm9rn6eai08d9bnq6r6g")
-                if game_data["code"] != 0:
-                    raise Exception(f"Error {game_data['code']}: {game_data['message']}")
-            else:
-                raise Exception("Need to set rc_email and rc_password (MD5 hash) in config.env!")
+        game_data = await self.rc_api.call("/record/getRoomData", keyValue=identifier)
+        if game_data["code"] != 0:
+            raise Exception(f"Error {game_data['code']}: {game_data['message']}")
         if username is not None:
             for p in game_data["data"]["handRecord"][0]["players"]:
                 if p["nickname"] == username:
