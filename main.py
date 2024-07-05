@@ -12,7 +12,7 @@ from InjusticeJudge.injustice_judge.injustices import evaluate_game
 app = Quart(__name__)
 gateway = None
 majsoul_regex = r"https://mahjongsoul.game.yo-star.com/\?paipu=([a-z0-9]{6}-[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(_a\d+)?(_[0-3])?"
-tenhou_regex = r"https://tenhou.net/0/\?log=(\d{10}gm-\d{4}-\d{4}-[0-9a-f]{8})(&tw=\d+)?"
+tenhou_regex = r"https://tenhou.net/0/\?log=(\d{10}gm-\d{4}-\d{4,}-[0-9a-f]{8})(&tw=\d+)?"
 riichicity_regex = r"[a-z0-9]{20}(@.+)?"
 
 @app.route('/injustice', methods=['POST'])
