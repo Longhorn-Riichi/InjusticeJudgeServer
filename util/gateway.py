@@ -10,6 +10,7 @@ from google.protobuf.message import Message
 from google.protobuf.json_format import MessageToDict
 from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, parse_wrapped_bytes, parse_majsoul_link
 from websockets.exceptions import ConnectionClosedError
+import websockets
 
 MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
 MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
@@ -36,6 +37,14 @@ class Gateway(MahjongSoulAPI):
             super().__init__(MS_ENGLISH_WSS_ENDPOINT)
         else:
             raise Exception("Gateway was initialized without login credentials!")
+
+    async def connect(self) -> None:
+        try:
+            await self.ws.close()
+        except:
+            pass
+        self.ws = await websockets.connect(self.endpoint)  # type: ignore[attr-defined]
+        self.ix = 0
 
     async def login_en(self):
         UID = self.mjs_uid
@@ -139,7 +148,7 @@ class Gateway(MahjongSoulAPI):
         """
         if hasattr(self, "huge_ping_task") and self.huge_ping_task:
             self.huge_ping_task.cancel()
-        await self.reconnect()
+        await self.connect()
         await self.login()
 
     async def call(self, methodName, **msgFields):
