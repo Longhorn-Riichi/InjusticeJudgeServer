@@ -4,7 +4,7 @@ import os
 import re
 from util.gateway import Gateway
 from quart import Quart, jsonify, request
-from InjusticeJudge.injustice_judge.fetch.majsoul import parse_majsoul, MahjongSoulAPI
+from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, parse_majsoul, MahjongSoulAPI
 from InjusticeJudge.injustice_judge.fetch.tenhou import fetch_tenhou, parse_tenhou
 from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI, parse_riichicity
 from InjusticeJudge.injustice_judge.injustices import evaluate_game
@@ -20,15 +20,13 @@ async def run_injustice():
     data = await request.get_json()
     link = data['link']
     print(link)
-    if re.match(majsoul_regex, link) is not None:
-        majsoul_log, metadata, player = await gateway.fetch_majsoul(link)
-        kyokus, parsed_metadata, parsed_player_seat = parse_majsoul(majsoul_log, metadata, None)
-    elif re.match(tenhou_regex, link) is not None:
-        tenhou_log, metadata, player = fetch_tenhou(link)
-        kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(tenhou_log, metadata, None)
-    elif re.match(riichicity_regex, link) is not None:
-        riichicity_log, metadata, player = await gateway.fetch_riichicity(link)
-        kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(riichicity_log, metadata, None)
+    for regex, fetch, parse in [[majsoul_regex, gateway.fetch_majsoul, parse_majsoul],
+                                [tenhou_regex, fetch_tenhou, parse_tenhou],
+                                [riichicity_regex, gateway.fetch_riichicity, parse_riichicity]]:
+        if re.match(regex, link) is not None:
+            log, metadata, player = await fetch(link)
+            kyokus, parsed_metadata, parsed_player_seat = parse(log, metadata, None)
+            break
     else:
         raise Exception("Invalid input")
     player = parsed_player_seat or player
@@ -42,26 +40,24 @@ async def run_injustice():
 
 async def run():
     dotenv.load_dotenv("config.env")
-
-    # mjs_username=USERNAME, mjs_password=PASSWORD
     MS_USERNAME = os.environ.get("ms_username")
     MS_PASSWORD = os.environ.get("ms_password")
-
     RC_EMAIL = os.getenv("rc_email")
     RC_PASSWORD = os.getenv("rc_password")
 
-    async with RiichiCityAPI("aga.mahjong-jp.net", RC_EMAIL, RC_PASSWORD) as rc_api:
-        async with Gateway(rc_api=rc_api, mjs_username=MS_USERNAME, mjs_password=MS_PASSWORD) as g:
+    MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
+    MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
+
+    async with MahjongSoulAPI(MS_CHINESE_WSS_ENDPOINT) as ms_api:
+        async with RiichiCityAPI("aga.mahjong-jp.net", RC_EMAIL, RC_PASSWORD) as rc_api:
             global gateway
-            gateway = g
+            gateway = Gateway(ms_api=ms_api, rc_api=rc_api, mjs_username=MS_USERNAME, mjs_password=MS_PASSWORD)
             await gateway.login()
-            print("logged in!")
 
             from hypercorn.asyncio import serve
             from hypercorn.config import Config
             config = Config()
             config.bind = ["0.0.0.0:5111"]
-
             await serve(app, config)
 
 if __name__ == '__main__':

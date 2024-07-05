@@ -13,18 +13,18 @@ from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI
 from websockets.exceptions import ConnectionClosedError
 import websockets
 
-MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
-MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
-
 class GeneralMajsoulError(Exception):
     def __init__(self, errorCode: int, message: str):
         self.errorCode = errorCode
         self.message = f"ERROR CODE {errorCode}: {message}"
         super().__init__(self.message)
 
-class Gateway(MahjongSoulAPI):
-    """Helper class to interface with the Mahjong Soul API"""
-    def __init__(self, rc_api: RiichiCityAPI,
+MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
+MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
+
+class Gateway:
+    def __init__(self, ms_api: MahjongSoulAPI,
+                       rc_api: RiichiCityAPI,
                        mjs_username: Optional[str]=None,
                        mjs_password: Optional[str]=None,
                        mjs_uid: Optional[str]=None,
@@ -34,22 +34,23 @@ class Gateway(MahjongSoulAPI):
         self.mjs_password = mjs_password
         self.mjs_uid = mjs_uid
         self.mjs_token = mjs_token
+        self.ms_api = ms_api
         self.rc_api = rc_api
         self.use_cn = self.mjs_username is not None and self.mjs_password is not None
         self.use_en = self.mjs_uid is not None and self.mjs_token is not None
         if self.use_cn:
-            super().__init__(MS_CHINESE_WSS_ENDPOINT)
+            self.endpoint = MS_CHINESE_WSS_ENDPOINT
         elif self.use_en:
-            super().__init__(MS_ENGLISH_WSS_ENDPOINT)
+            self.endpoint = MS_ENGLISH_WSS_ENDPOINT
         else:
             raise Exception("Gateway was initialized without Mahjong Soul login credentials!")
 
     async def connect(self) -> None:
         try:
-            await self.ws.close()
+            await self.ms_api.ws.close()
         except:
             pass
-        self.ws = await websockets.connect(self.endpoint)  # type: ignore[attr-defined]
+        self.ms_api.ws = await websockets.connect(self.endpoint)  # type: ignore[attr-defined]
         self.ix = 0
 
     async def login_en(self):
@@ -59,19 +60,19 @@ class Gateway(MahjongSoulAPI):
         self.logger.info(f"Fetched Mahjong Soul version: {MS_VERSION}")
         self.client_version_string = f"web-{MS_VERSION[:-2]}"
         self.logger.info("Calling heatbeat...")
-        await super().call("heatbeat")
+        await self.ms_api.call("heatbeat")
         self.logger.info("Requesting initial access token...")
         USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/110.0"
         access_token = requests.post(url="https://passport.mahjongsoul.com/user/login", headers={"User-Agent": USER_AGENT, "Referer": "https://mahjongsoul.game.yo-star.com/"}, data={"uid":UID,"token":TOKEN,"deviceId":f"web|{UID}"}).json()["accessToken"]
         self.logger.info("Requesting oauth access token...")
-        oauth_token = (await super().call("oauth2Auth", type=7, code=access_token, uid=UID, client_version_string=f"web-{MS_VERSION}")).access_token
+        oauth_token = (await self.ms_api.call("oauth2Auth", type=7, code=access_token, uid=UID, client_version_string=f"web-{MS_VERSION}")).access_token
         self.logger.info("Calling heatbeat...")
-        await super().call("heatbeat")
+        await self.ms_api.call("heatbeat")
         self.logger.info("Calling oauth2Check...")
-        assert (await super().call("oauth2Check", type=7, access_token=oauth_token)).has_account, "couldn't find account with oauth2Check"
+        assert (await self.ms_api.call("oauth2Check", type=7, access_token=oauth_token)).has_account, "couldn't find account with oauth2Check"
         self.logger.info("Calling oauth2Login...")
         client_device_info = {"platform": "pc", "hardware": "pc", "os": "mac", "is_browser": True, "software": "Firefox", "sale_platform": "web"}
-        await super().call("oauth2Login", type=7, access_token=oauth_token, reconnect=False, device=client_device_info, random_key=str(uuid.uuid1()), client_version={"resource": f"{MS_VERSION}.w"}, currency_platforms=[], client_version_string=f"web-{MS_VERSION}", tag="en")
+        await self.ms_api.call("oauth2Login", type=7, access_token=oauth_token, reconnect=False, device=client_device_info, random_key=str(uuid.uuid1()), client_version={"resource": f"{MS_VERSION}.w"}, currency_platforms=[], client_version_string=f"web-{MS_VERSION}", tag="en")
         self.logger.info(f"`login` with token successful!")
 
     async def login_cn(self):
@@ -90,7 +91,7 @@ class Gateway(MahjongSoulAPI):
 
         self.client_version_string = f"web-{ms_version[:-2]}"
         client_device_info = {"is_browser": True}
-        await super().call(
+        await self.ms_api.call(
             "login",
             account=self.mjs_username,
             password=hmac.new(b"lailai", self.mjs_password.encode(), hashlib.sha256).hexdigest(),
@@ -112,7 +113,7 @@ class Gateway(MahjongSoulAPI):
             await self.login_cn()
         elif self.use_en:
             await self.login_en()
-
+        print("logged into majsoul!")
         self.huge_ping_task = asyncio.create_task(self.huge_ping())
     
     async def huge_ping(self, huge_ping_interval=14400):
@@ -137,10 +138,7 @@ class Gateway(MahjongSoulAPI):
         Connect to the Chinese game server and login with username and password.
         """
         try:
-            if self.use_cn:
-                await self.connect(MS_CHINESE_WSS_ENDPOINT)
-            else:
-                await self.connect(MS_ENGLISH_WSS_ENDPOINT)
+            await self.connect(self.endpoint)
             await self.login()
         except InvalidStatusCode as e:
             self.logger.error("Failed to login for Lobby. Is Mahjong Soul currently undergoing maintenance?")
@@ -163,7 +161,7 @@ class Gateway(MahjongSoulAPI):
         `MajsoulChannel` already prints the API Errors to the console.
         """
         try:
-            return await super().call(methodName, **msgFields)
+            return await self.ms_api.call(methodName, **msgFields)
         except GeneralMajsoulError as mjsError:
             # if you get 1002, you're likely using the wrong endpoint
             if mjsError.errorCode == 1004:
@@ -175,7 +173,7 @@ class Gateway(MahjongSoulAPI):
                 """
                 self.logger.info("Received `ERR_ACC_NOT_LOGIN`; now trying to log in again and resend the previous request.")
                 await self.reconnect_and_login()
-                return await super().call(methodName, **msgFields)
+                return await self.ms_api.call(methodName, **msgFields)
             else:
                 # raise other GeneralMajsoulError
                 raise mjsError
@@ -186,7 +184,7 @@ class Gateway(MahjongSoulAPI):
             """
             self.logger.info("ConnectionClosed[Error]; now trying to log in again and resend the previous request.")
             await self.reconnect_and_login()
-            return await super().call(methodName, **msgFields)
+            return await self.ms_api.call(methodName, **msgFields)
 
     async def fetch_majsoul(self, link: str):
         """
