@@ -9,6 +9,7 @@ from typing import *
 from google.protobuf.message import Message
 from google.protobuf.json_format import MessageToDict
 from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, parse_wrapped_bytes, parse_majsoul_link
+from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI
 from websockets.exceptions import ConnectionClosedError
 import websockets
 
@@ -23,12 +24,17 @@ class GeneralMajsoulError(Exception):
 
 class Gateway(MahjongSoulAPI):
     """Helper class to interface with the Mahjong Soul API"""
-    def __init__(self, mjs_username: Optional[str]=None, mjs_password: Optional[str]=None, mjs_uid: Optional[str]=None, mjs_token: Optional[str]=None) -> None:
+    def __init__(self, mjs_username: Optional[str]=None,
+                       mjs_password: Optional[str]=None,
+                       mjs_uid: Optional[str]=None,
+                       mjs_token: Optional[str]=None,
+                       rc_api: RiichiCityAPI) -> None:
         self.logger = logging.getLogger("Gateway")
         self.mjs_username = mjs_username
         self.mjs_password = mjs_password
         self.mjs_uid = mjs_uid
         self.mjs_token = mjs_token
+        self.rc_api = rc_api
         self.use_cn = self.mjs_username is not None and self.mjs_password is not None
         self.use_en = self.mjs_uid is not None and self.mjs_token is not None
         if self.use_cn:
@@ -36,7 +42,7 @@ class Gateway(MahjongSoulAPI):
         elif self.use_en:
             super().__init__(MS_ENGLISH_WSS_ENDPOINT)
         else:
-            raise Exception("Gateway was initialized without login credentials!")
+            raise Exception("Gateway was initialized without Mahjong Soul login credentials!")
 
     async def connect(self) -> None:
         try:
@@ -228,3 +234,40 @@ class Gateway(MahjongSoulAPI):
                         break
         
         return actions, MessageToDict(record.head), player
+
+    async def fetch_riichicity(self, identifier: str):
+        """
+        Fetch a raw riichi city log given the log identifier.
+        Example identifier: cm775fuai08d9bndf24g@1
+        """
+        import json
+        player = None
+        username = None
+        if "@" in identifier:
+            identifier, username = identifier.split("@")
+            if username in "0123":
+                player = int(username)
+                username = None
+        try:
+            f = open(f"cached_games/game-{identifier}.json", 'rb')
+            game_data = json.load(f)
+        except Exception:
+            import os
+            import dotenv
+            import requests
+            import urllib3
+            dotenv.load_dotenv("config.env")
+            EMAIL = os.getenv("rc_email")
+            PASSWORD = os.getenv("rc_password")
+            if EMAIL is not None and PASSWORD is not None:
+                game_data = await self.rc_api.call("/record/getRoomData", keyValue="cm9rn6eai08d9bnq6r6g")
+                if game_data["code"] != 0:
+                    raise Exception(f"Error {game_data['code']}: {game_data['message']}")
+            else:
+                raise Exception("Need to set rc_email and rc_password (MD5 hash) in config.env!")
+        if username is not None:
+            for p in game_data["data"]["handRecord"][0]["players"]:
+                if p["nickname"] == username:
+                    player = p["position"]
+                    break
+        return game_data["data"]["handRecord"], game_data["data"], player

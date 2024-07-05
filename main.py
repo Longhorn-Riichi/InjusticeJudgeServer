@@ -27,7 +27,7 @@ async def run_injustice():
         tenhou_log, metadata, player = fetch_tenhou(link)
         kyokus, parsed_metadata, parsed_player_seat = parse_tenhou(tenhou_log, metadata, None)
     elif re.match(riichicity_regex, link) is not None:
-        riichicity_log, metadata, player = await fetch_riichicity(link)
+        riichicity_log, metadata, player = await gateway.fetch_riichicity(link)
         kyokus, parsed_metadata, parsed_player_seat = parse_riichicity(riichicity_log, metadata, None)
     else:
         raise Exception("Invalid input")
@@ -44,25 +44,25 @@ async def run():
     dotenv.load_dotenv("config.env")
 
     # mjs_username=USERNAME, mjs_password=PASSWORD
-    USERNAME = os.environ.get("ms_username")
-    PASSWORD = os.environ.get("ms_password")
+    MS_USERNAME = os.environ.get("ms_username")
+    MS_PASSWORD = os.environ.get("ms_password")
 
-    # mjs_uid=UID, mjs_token=TOKEN
-    # UID = os.environ.get("ms_uid")
-    # TOKEN = os.environ.get("ms_token")
+    RC_EMAIL = os.getenv("rc_email")
+    RC_PASSWORD = os.getenv("rc_password")
 
-    async with Gateway(mjs_username=USERNAME, mjs_password=PASSWORD) as g:
-        global gateway
-        gateway = g
-        await gateway.login()
-        print("logged in!")
+    async with RiichiCityAPI("aga.mahjong-jp.net", RC_EMAIL, RC_PASSWORD) as rc_api:
+        async with Gateway(mjs_username=MS_USERNAME, mjs_password=MS_PASSWORD, rc_api=rc_api) as g:
+            global gateway
+            gateway = g
+            await gateway.login()
+            print("logged in!")
 
-        from hypercorn.asyncio import serve
-        from hypercorn.config import Config
-        config = Config()
-        config.bind = ["0.0.0.0:5111"]
+            from hypercorn.asyncio import serve
+            from hypercorn.config import Config
+            config = Config()
+            config.bind = ["0.0.0.0:5111"]
 
-        await serve(app, config)
+            await serve(app, config)
 
 if __name__ == '__main__':
     print(asyncio.run(run()))
