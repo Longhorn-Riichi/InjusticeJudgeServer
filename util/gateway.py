@@ -8,16 +8,10 @@ import uuid
 from typing import *
 from google.protobuf.message import Message
 from google.protobuf.json_format import MessageToDict
-from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, parse_wrapped_bytes, parse_majsoul_link
+from InjusticeJudge.injustice_judge.fetch.majsoul import MahjongSoulAPI, MahjongSoulError, parse_wrapped_bytes, parse_majsoul_link
 from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI
 from websockets.exceptions import ConnectionClosedError
 import websockets
-
-class GeneralMajsoulError(Exception):
-    def __init__(self, errorCode: int, message: str):
-        self.errorCode = errorCode
-        self.message = f"ERROR CODE {errorCode}: {message}"
-        super().__init__(self.message)
 
 MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
 MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
@@ -126,7 +120,7 @@ class Gateway:
                 try:
                     await self.call("heatbeat")
                     self.logger.info(f"huge_ping'd.")
-                except GeneralMajsoulError:
+                except MahjongSoulError:
                     # ignore mahjong soul errors not caught in wrapped `call()`
                     pass
                 await asyncio.sleep(huge_ping_interval)
@@ -162,21 +156,15 @@ class Gateway:
         """
         try:
             return await self.ms_api.call(methodName, **msgFields)
-        except GeneralMajsoulError as mjsError:
+        except MahjongSoulError as e:
             # if you get 1002, you're likely using the wrong endpoint
-            if mjsError.errorCode == 1004:
-                """
-                "ERR_ACC_NOT_LOGIN"
-                In this case, try logging BACK in and retrying the call.
-                Do nothing if the retry still failed. (we do this because
-                the account may have been logged out elsewhere unintentionally)
-                """
+            if e.code == 1004:
+                # relog and retry once more
                 self.logger.info("Received `ERR_ACC_NOT_LOGIN`; now trying to log in again and resend the previous request.")
                 await self.reconnect_and_login()
                 return await self.ms_api.call(methodName, **msgFields)
             else:
-                # raise other GeneralMajsoulError
-                raise mjsError
+                raise e
         except ConnectionClosedError:
             """
             similar to above; try logging back in once and retrying the call.
