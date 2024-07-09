@@ -43,19 +43,10 @@ async def run_injustice():
 
 async def run():
     dotenv.load_dotenv("config.env")
-    MS_USERNAME = os.environ.get("ms_username")
-    MS_PASSWORD = os.environ.get("ms_password")
-    RC_EMAIL = os.getenv("rc_email")
-    RC_PASSWORD = os.getenv("rc_password")
-
-    MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
-    MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
-
-    async with MahjongSoulAPI(MS_CHINESE_WSS_ENDPOINT) as ms_api:
-        async with RiichiCityAPI("aga.mahjong-jp.net", RC_EMAIL, RC_PASSWORD) as rc_api:
+    async with MahjongSoulAPI(mjs_username=os.getenv("ms_username"), mjs_password=os.getenv("ms_password"), mjs_uid=os.getenv("ms_uid"), mjs_token=os.getenv("ms_token")) as ms_api:
+        async with RiichiCityAPI("aga.mahjong-jp.net", os.getenv("rc_email"), os.getenv("rc_password")) as rc_api:
             global gateway
-            gateway = Gateway(ms_api=ms_api, rc_api=rc_api, mjs_username=MS_USERNAME, mjs_password=MS_PASSWORD)
-            await gateway.login()
+            gateway = Gateway(ms_api=ms_api, rc_api=rc_api)
 
             from hypercorn.asyncio import serve
             from hypercorn.config import Config

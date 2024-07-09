@@ -23,9 +23,10 @@ class Gateway:
         self.logger = logging.getLogger("Gateway")
         self.ms_api = ms_api
         self.rc_api = rc_api
+        self.keepalive_task = asyncio.create_task(self.keepalive())
 
     async def keepalive(self, interval=14400):
-        """Calls `heatbeat` for mahjong soul every 4 hours"""
+        """Calls `heatbeat` for `ms_api` every 4 hours"""
         try:
             while True:
                 try:
@@ -39,17 +40,14 @@ class Gateway:
             self.logger.info("`keepalive` task cancelled")
     
     async def relog(self):
-        if hasattr(self, "keepalive") and self.keepalive:
-            self.keepalive.cancel()
+        if hasattr(self, "keepalive_task") and self.keepalive_task:
+            self.keepalive_task.cancel()
         await self.ms_api.login()
         await self.rc_api.login()
-        self.keepalive = asyncio.create_task(self.keepalive())
+        self.keepalive_task = asyncio.create_task(self.keepalive())
 
     async def ms_call(self, method, **fields):
-        """
-        Wrap around `MajsoulChannel.call()` to handle certain errors. Note that
-        `MajsoulChannel` already prints the API Errors to the console.
-        """
+        """This is self.ms_api.call() with error handling"""
         try:
             return await self.ms_api.call(method, **fields)
         except MahjongSoulError as e:
@@ -68,7 +66,7 @@ class Gateway:
             return await self.ms_api.call(method, **fields)
 
     async def fetch_majsoul(self, link: str):
-        """Use self.ms_call instead of spinning up a new MahjongSoulAPI"""
+        """Uses self.ms_call instead of spinning up a new MahjongSoulAPI"""
         identifier, ms_account_id, player_seat = parse_majsoul_link(link)
         record = await self.ms_call(
             "fetchGameRecord",
@@ -92,11 +90,11 @@ class Gateway:
         return actions, MessageToDict(record.head), player
 
     async def fetch_tenhou(self, link: str):
-        # just an async wrapper around fetch_tenhou
+        """Just an async wrapper around fetch_tenhou()"""
         return fetch_tenhou(link)
 
     async def fetch_riichicity(self, identifier: str):
-        """Use self.rc_api.call instead of spinning up a new RiichiCityAPI"""
+        """Uses self.rc_api.call() instead of spinning up a new RiichiCityAPI"""
         import json
         player = None
         username = None
