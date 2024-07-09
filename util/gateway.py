@@ -14,9 +14,6 @@ from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI
 from websockets.exceptions import ConnectionClosedError
 import websockets
 
-MS_CHINESE_WSS_ENDPOINT = "wss://gateway-hw.maj-soul.com:443/gateway"
-MS_ENGLISH_WSS_ENDPOINT = "wss://mjusgs.mahjongsoul.com:9663/"
-
 class Gateway:
     def __init__(self, ms_api: MahjongSoulAPI,
                        rc_api: RiichiCityAPI) -> None:
