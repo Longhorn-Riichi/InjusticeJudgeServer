@@ -54,7 +54,10 @@ async def call(look_for: Set[str] = {"injustice"}) -> List[str]:
             all_results = [get_results(kyoku, {0,1,2}, look_for) for kyoku in kyokus]
     else:
         all_results = [get_results(kyoku, {player}, look_for) for kyoku in kyokus]
-    statistics.process_game_injustices(all_results)
+    if "injustice" in look_for:
+        statistics.process_game_injustices(all_results)
+    if "skill" in look_for:
+        statistics.process_game_skills(all_results)
     return [format_result(seat, result_list, parsed_metadata.name, len(results) == 1)
             for results in all_results
             for seat, result_list in results.items()
