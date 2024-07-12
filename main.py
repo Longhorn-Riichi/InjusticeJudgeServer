@@ -19,20 +19,20 @@ tenhou_regex = r"https://tenhou.net/0/\?log=(\d{10}gm-[0-9a-f]{4}-\d{4,}-[0-9a-f
 riichicity_regex = r"[a-z0-9]{20}(@.+)?"
 
 @app.route('/injustice', methods=['POST'])  # type: ignore[type-var]
-async def run_injustice() -> None:
-    await call({"injustice"})
+async def run_injustice() -> List[str]:
+    return await call({"injustice"})
 
 @app.route('/skill', methods=['POST'])  # type: ignore[type-var]
-async def run_skill() -> None:
-    await call({"skill"})
+async def run_skill() -> List[str]:
+    return await call({"skill"})
 
-async def call(look_for: Set[str] = {"injustice"}):
+async def call(look_for: Set[str] = {"injustice"}) -> List[str]:
     global gateway
     global statistics
     assert gateway is not None
     data = await request.get_json()
     link = data['link']
-    print(link)
+    print(link, look_for)
     for regex, fetch, parse in [(majsoul_regex, gateway.fetch_majsoul, parse_majsoul),
                                 (tenhou_regex, gateway.fetch_tenhou, parse_tenhou),
                                 (riichicity_regex, gateway.fetch_riichicity, parse_riichicity)]:
