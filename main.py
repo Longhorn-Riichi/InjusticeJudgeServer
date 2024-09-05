@@ -10,6 +10,9 @@ from InjusticeJudge.injustice_judge.fetch.tenhou import parse_tenhou
 from InjusticeJudge.injustice_judge.fetch.riichicity import RiichiCityAPI, parse_riichicity
 from InjusticeJudge.injustice_judge.injustices import format_result, get_results
 from typing import *
+import logging
+
+logger = logging.getLogger("InjusticeJudge")
 
 app = Quart(__name__)
 gateway: Optional[Gateway] = None
@@ -32,7 +35,7 @@ async def call(look_for: Set[str] = {"injustice"}) -> List[str]:
     assert gateway is not None
     data = await request.get_json()
     link = data['link']
-    print(link, look_for)
+    logger.info(link, look_for)
     for regex, fetch, parse in [(majsoul_regex, gateway.fetch_majsoul, parse_majsoul),
                                 (tenhou_regex, gateway.fetch_tenhou, parse_tenhou),
                                 (riichicity_regex, gateway.fetch_riichicity, parse_riichicity)]:
@@ -66,9 +69,9 @@ async def call(look_for: Set[str] = {"injustice"}) -> List[str]:
 async def run():
     dotenv.load_dotenv("config.env")
     async with MahjongSoulAPI(mjs_username=os.getenv("ms_username"), mjs_password=os.getenv("ms_password"), mjs_uid=os.getenv("ms_uid"), mjs_token=os.getenv("ms_token")) as ms_api:
-        print("Logged into Mahjong Soul!")
+        logger.info("Logged into Mahjong Soul!")
         async with RiichiCityAPI("aga.mahjong-jp.net", os.getenv("rc_email"), os.getenv("rc_password")) as rc_api:
-            print("Logged into Riichi City!")
+            logger.info("Logged into Riichi City!")
             global gateway
             gateway = Gateway(ms_api=ms_api, rc_api=rc_api)
 
@@ -79,6 +82,6 @@ async def run():
             await serve(app, config)
 
 if __name__ == '__main__':
-    print(asyncio.run(run()))
+    asyncio.run(run())
 
     
