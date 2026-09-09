@@ -23,11 +23,11 @@ class Gateway:
         self.keepalive_task = asyncio.create_task(self.keepalive())
 
     async def keepalive(self, interval=14400):
-        """Calls `heatbeat` for `ms_api` every 4 hours"""
+        """Calls `heartbeat` for `ms_api` every 4 hours"""
         try:
             while True:
                 try:
-                    await self.ms_call("heatbeat")
+                    await self.ms_call("heartbeat")
                     self.logger.info(f"keepalive running")
                 except MahjongSoulError:
                     # ignore mahjong soul errors not caught in wrapped `call()`
